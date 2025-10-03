@@ -138,6 +138,8 @@ resource "aws_ecs_service" "strapi_service_am_10" {
   task_definition = aws_ecs_task_definition.strapi_task_am_10.arn
   desired_count   = 1
 
+  force_new_deployment = true
+
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
     weight            = 1
