@@ -47,9 +47,29 @@ resource "aws_lb" "strapi_alb_am_10" {
   security_groups    = [data.aws_security_group.strapi_sg_am_10.id]
 }
 
-# Target Group
+# Target Group (Blue)
 resource "aws_lb_target_group" "strapi_tg_am_10" {
   name        = "strapi-tg-am-10"
+  port        = var.container_port
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = data.aws_vpc.default.id
+
+  health_check {
+    path                = "/"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    matcher             = "200-399"
+  }
+}
+
+# Target Group (Green)
+resource "aws_lb_target_group" "strapi_tg_am_10_green" {
+  name        = "strapi-tg-am-10-green"
   port        = var.container_port
   protocol    = "HTTP"
   target_type = "ip"
@@ -111,7 +131,7 @@ resource "aws_ecs_task_definition" "strapi_task_am_10" {
   ])
 }
 
-# ECS Service
+# ECS Service (FARGATE)
 resource "aws_ecs_service" "strapi_service_am_10" {
   name            = "strapi-service-am-10"
   cluster         = aws_ecs_cluster.strapi_cluster_am_10.id
@@ -119,7 +139,7 @@ resource "aws_ecs_service" "strapi_service_am_10" {
   desired_count   = 1
 
   capacity_provider_strategy {
-    capacity_provider = "FARGATE_SPOT"
+    capacity_provider = "FARGATE"
     weight            = 1
   }
 
@@ -141,4 +161,45 @@ resource "aws_ecs_service" "strapi_service_am_10" {
   health_check_grace_period_seconds = 120
 
   depends_on = [aws_lb_listener.strapi_listener_am_10]
+}
+
+# CodeDeploy Application
+resource "aws_codedeploy_app" "strapi_app" {
+  name              = "strapi-codedeploy-app"
+  compute_platform  = "ECS"
+}
+
+# CodeDeploy Deployment Group
+resource "aws_codedeploy_deployment_group" "strapi_group" {
+  app_name              = aws_codedeploy_app.strapi_app.name
+  deployment_group_name = "strapi-bluegreen-group"
+  service_role_arn      = "arn:aws:iam::145065858967:role/adarshecsrole"
+
+  deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
+
+  ecs_service {
+    cluster_name = aws_ecs_cluster.strapi_cluster_am_10.name
+    service_name = aws_ecs_service.strapi_service_am_10.name
+  }
+
+  load_balancer_info {
+    target_group_pair_info {
+      prod_traffic_route {
+        listener_arns = [aws_lb_listener.strapi_listener_am_10.arn]
+      }
+
+      target_group {
+        name = aws_lb_target_group.strapi_tg_am_10.name
+      }
+
+      target_group {
+        name = aws_lb_target_group.strapi_tg_am_10_green.name
+      }
+    }
+  }
+
+  auto_rollback_configuration {
+    enabled = true
+    events  = ["DEPLOYMENT_FAILURE"]
+  }
 }
