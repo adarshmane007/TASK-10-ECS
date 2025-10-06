@@ -14,49 +14,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Install Docker (safe method for Ubuntu Noble)
-      run: |
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
+      - name: Install Docker (safe method for Ubuntu Noble)
+        run: |
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build and push Docker image
-      run: |
-        IMAGE_URI="${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
-        docker build -t $IMAGE_URI .
-        docker push $IMAGE_URI
+      - name: Build and push Docker image
+        run: |
+          IMAGE_URI="${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
 
-    - name: Generate AppSpec for CodeDeploy
-      run: |
-        echo "version: 1
-Resources:
-  - TargetService:
-      Type: AWS::ECS::Service
-      Properties:
-        TaskDefinition: strapi-task-am-10
-        LoadBalancerInfo:
-          ContainerName: strapi
-          ContainerPort: 1337
-        PlatformVersion: LATEST" > deployment.yml
-
-    - name: Trigger CodeDeploy Deployment
-      run: |
-        aws deploy create-deployment \
-          --application-name strapi-codedeploy-app \
-          --deployment-group-name strapi-bluegreen-group \
-          --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
-          --description "Blue/Green deployment triggered by GitHub Actions" \
-          --revision type=AppSpecContent,appSpecContent="{\"content\":\"$(cat deployment.yml | sed 's/"/\\"/g')\",\"sha256\":\"\"}"
+      - name: Trigger CodeDeploy Deployment
+        run: .github/scripts/deploy.sh

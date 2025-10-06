@@ -131,13 +131,7 @@ resource "aws_ecs_service" "strapi_service_am_10" {
     type = "CODE_DEPLOY"
   }
 
-  lifecycle {
-    ignore_changes = [
-      task_definition,
-      deployment_controller,
-      desired_count
-    ]
-  }
+  task_definition = aws_ecs_task_definition.strapi_task_am_10.arn
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
@@ -213,9 +207,7 @@ resource "aws_codedeploy_deployment_group" "strapi_group" {
       wait_time_in_minutes = 0
     }
 
-    green_fleet_provisioning_option {
-      action = "DISCOVER_EXISTING"
-    }
+    
   }
 
   auto_rollback_configuration {
