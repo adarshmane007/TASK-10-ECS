@@ -16,10 +16,10 @@ Resources:
         PlatformVersion: LATEST
 EOF
 
-# Read content into a single line
+# Read content into a single line and escape quotes
 CONTENT=$(tr -d '\n' < deployment.yml | sed 's/"/\\"/g')
 
-# Create full JSON input for CodeDeploy
+# Create full JSON input for CodeDeploy (no sha256)
 cat <<EOF > deploy.json
 {
   "applicationName": "strapi-codedeploy-app",
@@ -29,8 +29,7 @@ cat <<EOF > deploy.json
   "revision": {
     "revisionType": "AppSpecContent",
     "appSpecContent": {
-      "content": "$CONTENT",
-      "sha256": ""
+      "content": "$CONTENT"
     }
   }
 }
