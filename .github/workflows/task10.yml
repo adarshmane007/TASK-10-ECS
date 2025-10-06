@@ -6,9 +6,10 @@ on:
     branches:
       - adarsh_mane
     paths:
-      - '.github/workflows/bluegreen-deploy.yml'
+      - '.github/workflows/task10.yml'
       - '.github/scripts/**'
       - 'ecs-strapi/**'
+      
 
 jobs:
   deploy:
