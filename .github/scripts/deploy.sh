@@ -16,24 +16,10 @@ Resources:
         PlatformVersion: LATEST
 EOF
 
-# Preserve line breaks and escape quotes properly
-CONTENT=$(awk '{printf "%s\\n", $0}' deployment.yml | sed 's/"/\\"/g')
-
-# Create JSON payload for CodeDeploy
-cat <<EOF > deploy.json
-{
-  "applicationName": "strapi-codedeploy-app",
-  "deploymentGroupName": "strapi-bluegreen-group",
-  "deploymentConfigName": "CodeDeployDefault.ECSCanary10Percent5Minutes",
-  "description": "Blue/Green deployment triggered by GitHub Actions",
-  "revision": {
-    "revisionType": "AppSpecContent",
-    "appSpecContent": {
-      "content": "$CONTENT"
-    }
-  }
-}
-EOF
-
-# Trigger deployment
-aws deploy create-deployment --cli-input-json file://deploy.json
+# Trigger CodeDeploy deployment using direct AppSpec content
+aws deploy create-deployment \
+  --application-name strapi-codedeploy-app \
+  --deployment-group-name strapi-bluegreen-group \
+  --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
+  --description "Blue/Green deployment triggered by GitHub Actions" \
+  --revision revisionType=AppSpecContent,appSpecContent="{content=$(<deployment.yml)}"
