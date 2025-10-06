@@ -1,22 +1,19 @@
 #!/bin/bash
-
 set -e
 
-# Generate AppSpec content
 cat <<EOF > deployment.yml
-version: 1
+version: 0.0
 Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition: arn:aws:ecs:ap-south-1:145065858967:task-definition/strapi-task-am-10:11
-          LoadBalancerInfo:
+        TaskDefinition: arn:aws:ecs:ap-south-1:145065858967:task-definition/strapi-task-am-10:15
+        LoadBalancerInfo:
           ContainerName: strapi
           ContainerPort: 1337
         PlatformVersion: LATEST
 EOF
 
-# Trigger CodeDeploy deployment using direct AppSpec content
 aws deploy create-deployment \
   --application-name strapi-codedeploy-app \
   --deployment-group-name strapi-bluegreen-group \
