@@ -131,6 +131,10 @@ resource "aws_ecs_service" "strapi_service_am_10" {
     type = "CODE_DEPLOY"
   }
 
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
     weight            = 1
