@@ -132,7 +132,11 @@ resource "aws_ecs_service" "strapi_service_am_10" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [
+      task_definition,
+      deployment_controller,
+      desired_count
+    ]
   }
 
   capacity_provider_strategy {
