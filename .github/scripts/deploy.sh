@@ -14,7 +14,7 @@ Resources:
           ContainerPort: 1337
         PlatformVersion: LATEST' > deployment.yml
 
-# Escape quotes and flatten content
+# Flatten and escape AppSpec content
 CONTENT=$(cat deployment.yml | sed 's/"/\\"/g' | tr -d '\n')
 
 # Trigger CodeDeploy deployment
@@ -23,4 +23,4 @@ aws deploy create-deployment \
   --deployment-group-name strapi-bluegreen-group \
   --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
   --description "Blue/Green deployment triggered by GitHub Actions" \
-  --revision "type=AppSpecContent,appSpecContent={\"content\":\"$CONTENT\",\"sha256\":\"\"}"
+  --revision type=AppSpecContent,appSpecContent="{\"content\":\"$CONTENT\",\"sha256\":\"\"}"
