@@ -206,8 +206,6 @@ resource "aws_codedeploy_deployment_group" "strapi_group" {
       action_on_timeout = "CONTINUE_DEPLOYMENT"
       wait_time_in_minutes = 0
     }
-
-    
   }
 
   auto_rollback_configuration {
