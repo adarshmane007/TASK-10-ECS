@@ -11,12 +11,10 @@ provider "aws" {
   region = var.region
 }
 
-# Reuse default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-# Reuse existing subnets
 data "aws_subnet" "strapi_subnet_am_10a" {
   id = "subnet-03e1b3fe2ad999849"
 }
@@ -25,17 +23,14 @@ data "aws_subnet" "strapi_subnet_am_10b" {
   id = "subnet-05e9035d969355719"
 }
 
-# Reuse existing security group
 data "aws_security_group" "strapi_sg_am_10" {
   id = "sg-05107eda1fad1280d"
 }
 
-# ECS Cluster
 resource "aws_ecs_cluster" "strapi_cluster_am_10" {
   name = "strapi-cluster-am-10"
 }
 
-# Application Load Balancer
 resource "aws_lb" "strapi_alb_am_10" {
   name               = "strapi-alb-am-10"
   internal           = false
@@ -47,7 +42,6 @@ resource "aws_lb" "strapi_alb_am_10" {
   security_groups    = [data.aws_security_group.strapi_sg_am_10.id]
 }
 
-# Target Group (Blue)
 resource "aws_lb_target_group" "strapi_tg_am_10" {
   name        = "strapi-tg-am-10"
   port        = var.container_port
@@ -67,7 +61,6 @@ resource "aws_lb_target_group" "strapi_tg_am_10" {
   }
 }
 
-# Target Group (Green)
 resource "aws_lb_target_group" "strapi_tg_am_10_green" {
   name        = "strapi-tg-am-10-green"
   port        = var.container_port
@@ -87,7 +80,6 @@ resource "aws_lb_target_group" "strapi_tg_am_10_green" {
   }
 }
 
-# Listener
 resource "aws_lb_listener" "strapi_listener_am_10" {
   load_balancer_arn = aws_lb.strapi_alb_am_10.arn
   port              = 80
@@ -99,7 +91,6 @@ resource "aws_lb_listener" "strapi_listener_am_10" {
   }
 }
 
-# ECS Task Definition
 resource "aws_ecs_task_definition" "strapi_task_am_10" {
   family                   = "strapi-task-am-10"
   requires_compatibilities = ["FARGATE"]
@@ -131,18 +122,14 @@ resource "aws_ecs_task_definition" "strapi_task_am_10" {
   ])
 }
 
-# ECS Service (FARGATE)
 resource "aws_ecs_service" "strapi_service_am_10" {
   name            = "strapi-service-am-10"
   cluster         = aws_ecs_cluster.strapi_cluster_am_10.id
-  task_definition = aws_ecs_task_definition.strapi_task_am_10.arn
   desired_count   = 1
 
   deployment_controller {
     type = "CODE_DEPLOY"
   }
-
-  force_new_deployment = true
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
@@ -169,13 +156,11 @@ resource "aws_ecs_service" "strapi_service_am_10" {
   depends_on = [aws_lb_listener.strapi_listener_am_10]
 }
 
-# CodeDeploy Application
 resource "aws_codedeploy_app" "strapi_app" {
   name              = "strapi-codedeploy-app"
   compute_platform  = "ECS"
 }
 
-# CodeDeploy Deployment Group
 resource "aws_codedeploy_deployment_group" "strapi_group" {
   app_name              = aws_codedeploy_app.strapi_app.name
   deployment_group_name = "strapi-bluegreen-group"
