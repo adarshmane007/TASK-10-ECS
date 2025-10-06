@@ -7,6 +7,7 @@ on:
       - adarsh_mane
     paths:
       - '.github/workflows/bluegreen-deploy.yml'
+      - '.github/scripts/**'
       - 'ecs-strapi/**'
 
 jobs:
