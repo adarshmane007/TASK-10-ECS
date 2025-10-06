@@ -16,10 +16,10 @@ Resources:
         PlatformVersion: LATEST
 EOF
 
-# Flatten and escape content
-CONTENT=$(tr -d '\n' < deployment.yml | sed 's/"/\\"/g')
+# Preserve line breaks and escape quotes correctly
+CONTENT=$(awk '{printf "%s\\n", $0}' deployment.yml | sed 's/"/\\"/g')
 
-# Create JSON payload
+# Create JSON payload for CodeDeploy
 cat <<EOF > deploy.json
 {
   "applicationName": "strapi-codedeploy-app",
@@ -37,4 +37,3 @@ EOF
 
 # Trigger deployment
 aws deploy create-deployment --cli-input-json file://deploy.json
-# trigger deploy
