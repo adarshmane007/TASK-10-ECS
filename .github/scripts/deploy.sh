@@ -3,7 +3,7 @@
 set -e
 
 # Generate AppSpec content
-APPSPEC=$(cat <<EOF
+cat <<EOF > deployment.yml
 version: 1
 Resources:
   - TargetService:
@@ -15,15 +15,26 @@ Resources:
           ContainerPort: 1337
         PlatformVersion: LATEST
 EOF
-)
 
-# Escape quotes and flatten content
-ESCAPED_CONTENT=$(echo "$APPSPEC" | sed 's/"/\\"/g' | tr -d '\n')
+# Read content into a single line
+CONTENT=$(tr -d '\n' < deployment.yml | sed 's/"/\\"/g')
+
+# Create full JSON input for CodeDeploy
+cat <<EOF > deploy.json
+{
+  "applicationName": "strapi-codedeploy-app",
+  "deploymentGroupName": "strapi-bluegreen-group",
+  "deploymentConfigName": "CodeDeployDefault.ECSCanary10Percent5Minutes",
+  "description": "Blue/Green deployment triggered by GitHub Actions",
+  "revision": {
+    "revisionType": "AppSpecContent",
+    "appSpecContent": {
+      "content": "$CONTENT",
+      "sha256": ""
+    }
+  }
+}
+EOF
 
 # Trigger CodeDeploy deployment
-aws deploy create-deployment \
-  --application-name strapi-codedeploy-app \
-  --deployment-group-name strapi-bluegreen-group \
-  --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
-  --description "Blue/Green deployment triggered by GitHub Actions" \
-  --revision "revisionType=AppSpecContent,appSpecContent={\"content\":\"$ESCAPED_CONTENT\",\"sha256\":\"\"}"
+aws deploy create-deployment --cli-input-json file://deploy.json
