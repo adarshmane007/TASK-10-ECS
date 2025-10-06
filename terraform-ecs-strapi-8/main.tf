@@ -179,6 +179,11 @@ resource "aws_codedeploy_deployment_group" "strapi_group" {
 
   deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
 
+  deployment_style {
+    deployment_type  = "BLUE_GREEN"
+    deployment_option = "WITH_TRAFFIC_CONTROL"
+  }
+
   ecs_service {
     cluster_name = aws_ecs_cluster.strapi_cluster_am_10.name
     service_name = aws_ecs_service.strapi_service_am_10.name
