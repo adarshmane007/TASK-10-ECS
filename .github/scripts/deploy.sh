@@ -16,7 +16,7 @@ Resources:
         PlatformVersion: LATEST
 EOF
 
-# Preserve line breaks and escape quotes correctly
+# Preserve line breaks and escape quotes properly
 CONTENT=$(awk '{printf "%s\\n", $0}' deployment.yml | sed 's/"/\\"/g')
 
 # Create JSON payload for CodeDeploy
