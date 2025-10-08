@@ -9,7 +9,6 @@ on:
       - '.github/workflows/task10.yml'
       - '.github/scripts/**'
       - 'ecs-strapi/**'
-      
 
 jobs:
   deploy:
@@ -42,4 +41,31 @@ jobs:
           docker push $IMAGE_URI
 
       - name: Trigger CodeDeploy Deployment
-        run: .github/scripts/deploy.sh
+        id: trigger-deploy
+        run: |
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+            --application-name strapi-codedeploy-app \
+            --deployment-group-name strapi-bluegreen-group \
+            --revision file://.github/scripts/codedeploy-spec.json \
+            --query "deploymentId" --output text)
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+
+      - name: Monitor CodeDeploy Deployment Status
+        run: |
+          echo "Waiting for deployment to complete..."
+          for i in {1..30}; do
+            STATUS=$(aws deploy get-deployment \
+              --deployment-id ${{ steps.trigger-deploy.outputs.deployment_id }} \
+              --query "deploymentInfo.status" --output text)
+            echo "Current status: $STATUS"
+            if [ "$STATUS" == "Succeeded" ]; then
+              echo "✅ Deployment succeeded."
+              exit 0
+            elif [ "$STATUS" == "Failed" ]; then
+              echo "❌ Deployment failed. Consider triggering rollback or alerting team."
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "⚠️ Deployment timed out after waiting. Manual check recommended."
+          exit 1
