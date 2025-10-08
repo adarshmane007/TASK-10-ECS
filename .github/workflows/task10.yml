@@ -41,21 +41,20 @@ jobs:
           docker push $IMAGE_URI
 
       - name: Trigger CodeDeploy Deployment
-        id: trigger-deploy
         run: |
-          DEPLOYMENT_ID=$(aws deploy create-deployment \
-            --application-name strapi-codedeploy-app \
-            --deployment-group-name strapi-bluegreen-group \
-            --revision file://.github/scripts/codedeploy-spec.json \
-            --query "deploymentId" --output text)
-          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+          chmod +x .github/scripts/deploy.sh
+          .github/scripts/deploy.sh
 
       - name: Monitor CodeDeploy Deployment Status
         run: |
           echo "Waiting for deployment to complete..."
+          DEPLOYMENT_ID=$(aws deploy list-deployments \
+            --application-name strapi-codedeploy-app \
+            --deployment-group-name strapi-bluegreen-group \
+            --query "deployments[0]" --output text)
           for i in {1..30}; do
             STATUS=$(aws deploy get-deployment \
-              --deployment-id ${{ steps.trigger-deploy.outputs.deployment_id }} \
+              --deployment-id $DEPLOYMENT_ID \
               --query "deploymentInfo.status" --output text)
             echo "Current status: $STATUS"
             if [ "$STATUS" == "Succeeded" ]; then
